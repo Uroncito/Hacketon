@@ -1,4 +1,4 @@
-import Equipo from './Equipo'
+import { LogoCirculo } from './Equipo'
 import { nombreEquipo } from '../equipos'
 import type { Metricas, ResumenPartido as Resumen } from '../tipos'
 
@@ -25,13 +25,13 @@ export default function ResumenPartido({ r, alElegir }: { r: Resumen; alElegir: 
   return (
     <div className="space-y-4">
       <section className="rounded-lg bg-slate-800 p-4">
-        <h2 className="flex items-center gap-2 text-xl font-bold"><Equipo abbr={r.visitante} tam={36} /><span className="text-slate-500">@</span><Equipo abbr={r.local} tam={36} /></h2>
+        <h2 className="flex items-center gap-2 text-xl font-bold"><LogoCirculo abbr={r.visitante} /><span className="h-7 w-px bg-slate-600" aria-hidden="true" /><LogoCirculo abbr={r.local} /></h2>
         <p className="text-sm text-slate-400">{nombreEquipo(r.visitante)} visita a {nombreEquipo(r.local)} · Semana {r.semana} · {r.fecha} · {r.jugadas} jugadas de pase</p>
         <table className="mt-3 w-full text-sm">
           <thead>
             <tr className="text-slate-400">
               <th className="py-1 text-left font-normal">Dato</th>
-              {r.equipos.map((e) => <th key={e.equipo} className="py-1 text-right"><span className="inline-flex justify-end"><Equipo abbr={e.equipo} tam={24} /></span></th>)}
+              {r.equipos.map((e) => <th key={e.equipo} className="py-1 text-right"><span className="inline-flex justify-end"><LogoCirculo abbr={e.equipo} tam={20} /></span></th>)}
             </tr>
           </thead>
           <tbody>
