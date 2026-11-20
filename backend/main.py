@@ -1,9 +1,60 @@
-"""API mínima de la plantilla. Ejecuta: .venv/bin/uvicorn backend.main:app --reload"""
-from fastapi import FastAPI
+"""API de la Cabina del comentarista.
 
-app = FastAPI(title="Hackathon NFL UNAM")
+Ejecuta: .venv/bin/uvicorn backend.main:app --reload
+"""
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+
+from . import datos
+
+app = FastAPI(title="Cabina del comentarista NFL")
 
 
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/games")
+def partidos() -> list[dict]:
+    return datos.lista_partidos()
+
+
+@app.get("/api/games/{game_id}/plays")
+def jugadas(game_id: int) -> list[dict]:
+    resultado = datos.lista_jugadas(game_id)
+    if resultado is None:
+        raise HTTPException(404, "Partido no encontrado")
+    return resultado
+
+
+@app.get("/api/games/{game_id}/summary")
+def resumen(game_id: int) -> dict:
+    resultado = datos.resumen_partido(game_id)
+    if resultado is None:
+        raise HTTPException(404, "Partido no encontrado")
+    return resultado
+
+
+@app.get("/api/plays/{game_id}/{play_id}")
+def jugada(game_id: int, play_id: int) -> dict:
+    resultado = datos.detalle_jugada(game_id, play_id)
+    if resultado is None:
+        raise HTTPException(404, "Jugada no encontrada")
+    return resultado
+
+
+@app.get("/api/plays/{game_id}/{play_id}/tracking")
+def tracking(game_id: int, play_id: int) -> dict:
+    resultado = datos.tracking_jugada(game_id, play_id)
+    if resultado is None:
+        raise HTTPException(404, "Tracking no encontrado")
+    return resultado
+
+
+# En producción el servidor sirve el build del dashboard en la misma URL.
+_DIST = Path(__file__).resolve().parent.parent / "dashboard" / "dist"
+if _DIST.exists():
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="web")
