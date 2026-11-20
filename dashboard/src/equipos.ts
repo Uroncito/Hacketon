@@ -1,6 +1,4 @@
-// Abreviaturas de los equipos y su nombre completo.
-// Los datos de jugadas (2021) usan LA para los Rams y WAS para Washington Football Team.
-// El calendario (2025) usa LAR y WAS para Washington Commanders.
+// Abreviaturas de los equipos (las mismas que usa la base de datos, temporada 2021) y su nombre completo.
 export const EQUIPOS: Record<string, string> = {
   ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens', BUF: 'Buffalo Bills',
   CAR: 'Carolina Panthers', CHI: 'Chicago Bears', CIN: 'Cincinnati Bengals', CLE: 'Cleveland Browns',
@@ -12,16 +10,13 @@ export const EQUIPOS: Record<string, string> = {
   SF: 'San Francisco 49ers', TB: 'Tampa Bay Buccaneers', TEN: 'Tennessee Titans', WAS: 'Washington Football Team',
 }
 
-export const EQUIPOS_2025: Record<string, string> = {
-  ...EQUIPOS, LAR: 'Los Angeles Rams', WAS: 'Washington Commanders',
+export function nombreEquipo(abbr: string): string {
+  return EQUIPOS[abbr] ?? abbr
 }
 
-// El archivo del logo de los Rams se llama LA.png.
-export function archivoLogo(abbr: string): string {
-  return abbr === 'LAR' ? 'LA' : abbr
-}
-
-export function nombreEquipo(abbr: string, temporada: 2021 | 2025 = 2021): string {
-  const tabla = temporada === 2025 ? EQUIPOS_2025 : EQUIPOS
-  return tabla[abbr] ?? abbr
+// Nombre corto sin la ciudad: "Dallas Cowboys" -> "Cowboys".
+export function apodoEquipo(abbr: string): string {
+  if (abbr === 'WAS') return 'Washington'
+  const palabras = nombreEquipo(abbr).split(' ')
+  return palabras[palabras.length - 1]
 }

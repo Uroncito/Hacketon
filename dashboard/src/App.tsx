@@ -71,15 +71,15 @@ export default function App() {
       <header className="border-b border-slate-800 bg-slate-900 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">Cabina del comentarista NFL</h1>
+            <h1 className="text-4xl font-extrabold tracking-wider sm:text-5xl">NFL BIG DATA</h1>
             <p className="text-sm text-slate-400">
               {vista === 'calendario'
-                ? 'Calendario de la temporada 2025, organizado por semana.'
+                ? 'Calendario de la temporada 2021, organizado por semana.'
                 : 'Jugadas de pase de la NFL, semanas 1 a 8 de 2021. Elige un partido y una jugada para ver datos listos para comentar.'}
             </p>
           </div>
           <nav aria-label="Secciones" className="flex gap-1">
-            {([['calendario', 'Calendario 2025'], ['cabina', 'Cabina (jugadas 2021)']] as const).map(([id, texto]) => (
+            {([['calendario', 'Calendario 2021'], ['cabina', 'Cabina (jugadas 2021)']] as const).map(([id, texto]) => (
               <button key={id} type="button" aria-pressed={vista === id} onClick={() => setVista(id)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${vista === id ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
                 {texto}
