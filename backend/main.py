@@ -2,14 +2,24 @@
 
 Ejecuta: .venv/bin/uvicorn backend.main:app --reload
 """
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
-from . import datos
+from . import analisis, datos
 
-app = FastAPI(title="Cabina del comentarista NFL")
+
+@asynccontextmanager
+async def ciclo(_: FastAPI):
+    # Prepara en segundo plano las posiciones del tracking para que la primera consulta de un equipo sea rápida.
+    threading.Thread(target=analisis.precalentar, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Cabina del comentarista NFL", lifespan=ciclo)
 
 
 @app.get("/health")
@@ -51,6 +61,22 @@ def tracking(game_id: int, play_id: int) -> dict:
     resultado = datos.tracking_jugada(game_id, play_id)
     if resultado is None:
         raise HTTPException(404, "Tracking no encontrado")
+    return resultado
+
+
+@app.get("/api/teams/{abbr}")
+def equipo(abbr: str) -> dict:
+    resultado = analisis.perfil_equipo(abbr.upper())
+    if resultado is None:
+        raise HTTPException(404, "Equipo no encontrado")
+    return resultado
+
+
+@app.get("/api/compare")
+def comparar(a: str, b: str) -> dict:
+    resultado = analisis.comparar(a.upper(), b.upper())
+    if resultado is None:
+        raise HTTPException(404, "Equipo no encontrado")
     return resultado
 
 

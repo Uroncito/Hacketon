@@ -1,9 +1,9 @@
 import { GLOSARIO } from '../glosario'
 
 // Panel plegable con los términos necesarios para entender el partido.
-export default function Glosario() {
+export default function Glosario({ abierto = false }: { abierto?: boolean }) {
   return (
-    <details className="group rounded-2xl bg-blue-50 ring-1 ring-blue-100 xl:col-span-2">
+    <details open={abierto} className="group rounded-2xl bg-blue-50 ring-1 ring-blue-100 xl:col-span-2">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-nfl-azul">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-nfl-azul text-sm text-white" aria-hidden="true">?</span>
         ¿No entiendes un término? Abre el glosario

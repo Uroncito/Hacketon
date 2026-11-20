@@ -166,7 +166,7 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
   )
 }
 
-type Abierto = { juego: Juego; semana: number }
+export type Abierto = { juego: Juego; semana: number }
 
 // Partido abierto: los dos equipos en grande, cuándo se juega y la vista de jugadas del partido.
 function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido | null; alVolver: () => void }) {
@@ -203,10 +203,11 @@ function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido
   )
 }
 
-export default function Calendario() {
+// `inicial` abre un partido desde el principio (por ejemplo, desde la pestaña Partidos de un equipo).
+export default function Calendario({ inicial = null }: { inicial?: Abierto | null }) {
   const [semana, setSemana] = useState(1)
   const [equipo, setEquipo] = useState('')
-  const [abierto, setAbierto] = useState<Abierto | null>(null)
+  const [abierto, setAbierto] = useState<Abierto | null>(inicial)
   const [partidos, setPartidos] = useState<Partido[]>([])
   const s = CALENDARIO_2021[semana - 1]
   const equipos = useMemo(
