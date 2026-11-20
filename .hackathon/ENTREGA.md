@@ -1,10 +1,10 @@
-# Entrega: hackathon-unam
+# Entrega: Hacketon
 
-- Generado: 2026-11-20 12:44 (macos arm64)
+- Generado: 2026-11-20 13:09 (macos x64)
 - Stack verificado: Python 3.12.12, Node 22.23.1, uv 0.11.19
 - Dashboard compilado: sí (dashboard/dist)
 - Backend: se importa sin errores
-- Archivos incluidos: 356 (1654.5 MB sin comprimir)
+- Archivos incluidos: 369 (1655.1 MB sin comprimir)
 - Desviaciones del stack: ninguna
 
 ## Avisos
