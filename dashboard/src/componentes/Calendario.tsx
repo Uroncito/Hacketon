@@ -3,7 +3,8 @@ import { obtener } from '../api'
 import { CALENDARIO_2021, type Juego } from '../calendario'
 import { EQUIPOS, apodoEquipo, nombreEquipo } from '../equipos'
 import type { Partido } from '../tipos'
-import Equipo, { LogoCirculo } from './Equipo'
+import BannerEquipos from './BannerEquipos'
+import Equipo from './Equipo'
 import Portada from './Portada'
 import VistaPartido from './VistaPartido'
 
@@ -46,7 +47,7 @@ function agruparPorDia(juegos: Juego[]): Dia[] {
 function EquipoEnTarjeta({ abbr }: { abbr: string }) {
   return (
     <span className="flex min-w-0 items-center gap-1 px-0.5 py-0.5">
-      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100">
+      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-slate-300">
         <Equipo abbr={abbr} tam={16} texto={false} />
       </span>
       <span className="truncate text-xs font-semibold">{apodoEquipo(abbr)}</span>
@@ -60,14 +61,14 @@ function TarjetaJuego({ j, alAbrir }: { j: Juego; alAbrir: () => void }) {
     <li>
       <button type="button" onClick={alAbrir}
         aria-label={`${nombreEquipo(j.visitante)} contra ${nombreEquipo(j.local)}, ${horaET(j)} ET. Ver jugadas`}
-        className="grid w-full items-center gap-1 rounded-lg bg-slate-800 px-2 py-1 text-left ring-1 ring-slate-700 hover:bg-slate-700 hover:ring-emerald-500"
+        className="grid w-full items-center gap-1 rounded-lg bg-white px-2 py-1 text-left shadow-sm ring-1 ring-slate-300 hover:bg-blue-50 hover:ring-nfl-azul"
         style={{ gridTemplateColumns: '3.1rem minmax(0,1fr) auto minmax(0,1fr)' }}>
         <span className="flex flex-col whitespace-nowrap text-[10px] font-semibold leading-tight tabular-nums">
-          <span className="text-sky-300" title="Hora del Este de EE. UU.">{horaET(j)} ET</span>
-          <span className="text-emerald-400" title="Hora de Ciudad de México">{horaMX(j)} MX</span>
+          <span className="text-nfl-azul" title="Hora del Este de EE. UU.">{horaET(j)} ET</span>
+          <span className="text-red-600" title="Hora de Ciudad de México">{horaMX(j)} MX</span>
         </span>
         <EquipoEnTarjeta abbr={j.visitante} />
-        <span className="h-4 w-px shrink-0 bg-slate-600" aria-hidden="true" />
+        <span className="h-4 w-px shrink-0 bg-slate-300" aria-hidden="true" />
         <EquipoEnTarjeta abbr={j.local} />
       </button>
     </li>
@@ -88,8 +89,8 @@ function Semana({ n, alAbrir }: { n: number; alAbrir: (j: Juego) => void }) {
         <div className="grid gap-3" style={{ minWidth: total * ANCHO_COLUMNA, gridTemplateColumns: dias.map((d) => `${columnas(d)}fr`).join(' ') }}>
           {dias.map((d) => (
             <section key={d.fecha} aria-label={`${d.dia} ${d.fecha}`}>
-              <header className="mb-1.5 rounded-lg bg-slate-900 px-3 py-1 text-center ring-1 ring-slate-800">
-                <h3 className="text-sm font-bold">{d.dia} <span className="font-normal text-slate-400">· {d.fecha}</span></h3>
+              <header className="mb-1.5 rounded-lg bg-nfl-azul px-3 py-1 text-center text-white">
+                <h3 className="text-sm font-bold">{d.dia} <span className="font-normal text-blue-200">· {d.fecha}</span></h3>
               </header>
               <ul className="grid gap-1.5" style={{
                 gridTemplateColumns: `repeat(${columnas(d)}, minmax(0, 1fr))`,
@@ -103,11 +104,11 @@ function Semana({ n, alAbrir }: { n: number; alAbrir: (j: Juego) => void }) {
         </div>
       </div>
       {s.descansan.length > 0 && (
-        <section className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-900 p-2 ring-1 ring-slate-800">
-          <h3 className="mr-1 text-xs font-semibold text-slate-300">Descansan (bye):</h3>
+        <section className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200">
+          <h3 className="mr-1 text-xs font-semibold text-slate-600">Descansan (bye):</h3>
           {s.descansan.map((a) => (
-            <span key={a} className="flex items-center gap-1.5 rounded-full bg-slate-800 py-0.5 pl-0.5 pr-2 text-xs">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100">
+            <span key={a} className="flex items-center gap-1.5 rounded-full bg-slate-100 py-0.5 pl-0.5 pr-2 text-xs">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white ring-1 ring-slate-300">
                 <Equipo abbr={a} tam={16} texto={false} />
               </span>
               {apodoEquipo(a)}
@@ -125,12 +126,12 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-slate-300">
           <Equipo abbr={abbr} tam={44} texto={false} />
         </span>
         <h2 className="text-xl font-bold">{nombreEquipo(abbr)}</h2>
         <button type="button" onClick={alSalir}
-          className="ml-auto rounded border border-slate-600 px-3 py-1 text-sm text-slate-300 hover:bg-slate-800">
+          className="ml-auto rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 hover:bg-slate-100">
           Volver al calendario por semana
         </button>
       </div>
@@ -141,20 +142,20 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
           return (
             <li key={s.semana}>
               <button type="button" disabled={!j} onClick={() => j && alAbrir(j, s.semana)}
-                className="flex w-full items-center gap-3 rounded-lg bg-slate-900 px-3 py-1 text-left enabled:hover:bg-slate-800 disabled:cursor-default">
-                <span className="w-14 shrink-0 text-sm font-semibold text-emerald-400">Sem {s.semana}</span>
+                className="flex w-full items-center gap-3 rounded-lg bg-slate-50 px-3 py-1 text-left enabled:hover:bg-slate-100 disabled:cursor-default">
+                <span className="w-14 shrink-0 text-sm font-semibold text-nfl-azul">Sem {s.semana}</span>
                 {j && rival ? (
                   <>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-slate-300">
                       <Equipo abbr={rival} tam={22} texto={false} />
                     </span>
                     <span className="truncate text-sm font-semibold">{apodoEquipo(rival)}</span>
-                    <span className="ml-auto shrink-0 text-xs text-slate-400">
-                      {mayus(fDia.format(new Date(j.fecha)))} · <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-emerald-400">{horaMX(j)} MX</span>
+                    <span className="ml-auto shrink-0 text-xs text-slate-500">
+                      {mayus(fDia.format(new Date(j.fecha)))} · <span className="text-nfl-azul">{horaET(j)} ET</span> · <span className="text-red-600">{horaMX(j)} MX</span>
                     </span>
                   </>
                 ) : (
-                  <span className="text-slate-400">Semana de descanso (bye)</span>
+                  <span className="text-slate-500">Semana de descanso (bye)</span>
                 )}
               </button>
             </li>
@@ -167,31 +168,34 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
 
 type Abierto = { juego: Juego; semana: number }
 
-// Partido abierto: botón para volver, cuándo se jugó y la misma vista de la cabina (jugadas, resumen y detalle).
+// Partido abierto: los dos equipos en grande, cuándo se juega y la vista de jugadas del partido.
 function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido | null; alVolver: () => void }) {
   const j = a.juego
   return (
-    <section>
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={alVolver}
-          className="rounded border border-slate-600 px-3 py-1 text-sm text-slate-300 hover:bg-slate-800">
-          ← Volver al calendario
-        </button>
-        <p className="text-sm text-slate-300">
-          Semana {a.semana} · {mayus(fSemana.format(new Date(j.fecha)))} {fFecha.format(new Date(j.fecha))} ·{' '}
-          <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-emerald-400">{horaMX(j)} MX</span>
-        </p>
-      </div>
+    <section className="space-y-4">
+      <button type="button" onClick={alVolver}
+        className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100">
+        ← Volver al calendario
+      </button>
+      <BannerEquipos
+        izq={{ abbr: j.visitante, etiqueta: 'Visitante' }}
+        der={{ abbr: j.local, etiqueta: 'Local' }}
+        centro={
+          <div className="px-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-100">Semana {a.semana}</p>
+            <p className="mt-1 text-sm sm:text-base">{mayus(fSemana.format(new Date(j.fecha)))} {fFecha.format(new Date(j.fecha))}</p>
+            <p className="mt-2 text-lg font-extrabold sm:text-2xl">
+              {horaET(j)} ET <span className="mx-1 text-white/50">|</span> {horaMX(j)} MX
+            </p>
+            <p className="mt-1 text-[11px] text-blue-100">hora del Este de EE. UU. | hora de Ciudad de México</p>
+          </div>
+        }
+      />
       {partido ? <VistaPartido key={partido.gameId} partido={partido} /> : (
-        <div className="rounded-xl bg-slate-800 p-6 text-center">
-          <p className="flex items-center justify-center gap-3 text-xl font-bold">
-            <LogoCirculo abbr={j.visitante} />
-            <span className="h-6 w-px bg-slate-600" aria-hidden="true" />
-            <LogoCirculo abbr={j.local} />
-          </p>
-          <p className="mt-2 text-sm text-slate-300">{nombreEquipo(j.visitante)} y {nombreEquipo(j.local)}</p>
-          <p className="mt-3 text-slate-400">
-            Este partido no tiene jugadas en la base de datos. Solo hay datos de las semanas 1 a 8.
+        <div className="rounded-2xl bg-slate-50 p-6 text-center ring-1 ring-slate-200">
+          <p className="text-lg font-bold text-nfl-azul">Todavía no hay jugadas de este partido</p>
+          <p className="mt-1 text-slate-600">
+            Solo tenemos las jugadas de las semanas 1 a 8. Este partido es de la semana {a.semana}.
           </p>
         </div>
       )}
@@ -232,12 +236,12 @@ export default function Calendario() {
           <div className="flex flex-wrap items-end justify-between gap-3 pt-4">
             <div>
               <h2 className="text-2xl font-bold">Calendario NFL 2021</h2>
-              <p className="text-sm text-slate-400">Temporada regular, 18 semanas y 272 partidos. Toca un partido para ver sus jugadas.</p>
+              <p className="text-sm text-slate-500">Temporada regular, 18 semanas y 272 partidos. Toca un partido para ver sus jugadas.</p>
             </div>
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-slate-600">
               <span className="mb-1 block">Buscar un equipo</span>
               <select value={equipo} onChange={(e) => setEquipo(e.target.value)}
-                className="rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-slate-100">
+                className="rounded border border-slate-300 bg-slate-100 px-2 py-1.5 text-slate-900">
                 <option value="">Todos (ver por semana)</option>
                 {equipos.map((a) => <option key={a} value={a}>{nombreEquipo(a)}</option>)}
               </select>
@@ -251,21 +255,21 @@ export default function Calendario() {
               <nav aria-label="Semanas" className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(3rem, 1fr))' }}>
                 {CALENDARIO_2021.map((x) => (
                   <button key={x.semana} type="button" aria-pressed={x.semana === semana} onClick={() => setSemana(x.semana)}
-                    className={`rounded-lg py-2 text-sm font-semibold ${x.semana === semana ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+                    className={`rounded-lg py-2 text-sm font-semibold ${x.semana === semana ? 'bg-nfl-azul text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                     {x.semana}
                   </button>
                 ))}
               </nav>
 
-              <div className="flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-900 to-slate-800 px-4 py-3">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-nfl-azul to-blue-800 px-4 py-3 text-white">
                 <button type="button" disabled={semana === 1} onClick={() => setSemana(semana - 1)} aria-label="Semana anterior"
-                  className="rounded px-3 py-1 text-lg hover:bg-slate-700 disabled:opacity-30">←</button>
+                  className="rounded px-3 py-1 text-lg hover:bg-white/20 disabled:opacity-30">←</button>
                 <div className="text-center">
                   <h2 className="text-xl font-bold">Semana {semana}</h2>
-                  <p className="text-sm text-slate-300">{rangoSemana(s.juegos)} · {s.juegos.length} partidos</p>
+                  <p className="text-sm text-blue-100">{rangoSemana(s.juegos)} · {s.juegos.length} partidos</p>
                 </div>
                 <button type="button" disabled={semana === 18} onClick={() => setSemana(semana + 1)} aria-label="Semana siguiente"
-                  className="rounded px-3 py-1 text-lg hover:bg-slate-700 disabled:opacity-30">→</button>
+                  className="rounded px-3 py-1 text-lg hover:bg-white/20 disabled:opacity-30">→</button>
               </div>
 
               <Semana n={semana} alAbrir={(j) => abrir(j, semana)} />
@@ -273,8 +277,8 @@ export default function Calendario() {
           )}
 
           <p className="text-xs text-slate-500">
-            <span className="text-sky-300">ET</span>: hora del Este de EE. UU. (la que trae la base de datos).{' '}
-            <span className="text-emerald-400">MX</span>: hora de Ciudad de México. En cada partido, el visitante va a la izquierda y el local a la derecha.
+            <span className="text-nfl-azul">ET</span>: hora del Este de EE. UU. (la que trae la base de datos).{' '}
+            <span className="text-red-600">MX</span>: hora de Ciudad de México. En cada partido, el visitante va a la izquierda y el local a la derecha.
             Las horas de las semanas 9 a 18 vienen del calendario oficial, porque la base solo cubre las semanas 1 a 8.
           </p>
         </>

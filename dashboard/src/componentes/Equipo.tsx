@@ -19,7 +19,7 @@ export default function Equipo({ abbr, tam = 20, texto = true }: { abbr: string;
 // Logo con círculo claro detrás, para que se vean los logos oscuros sobre el fondo oscuro.
 export function LogoCirculo({ abbr, tam = 32 }: { abbr: string; tam?: number }) {
   return (
-    <span className="inline-flex items-center justify-center rounded-full bg-slate-100" style={{ width: tam + 12, height: tam + 12 }}>
+    <span className="inline-flex items-center justify-center rounded-full bg-white ring-1 ring-slate-300" style={{ width: tam + 12, height: tam + 12 }}>
       <Equipo abbr={abbr} tam={tam} texto={false} />
     </span>
   )

@@ -12,6 +12,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from . import lenguaje as L
+
 RAIZ = Path(__file__).resolve().parent.parent
 DATA = RAIZ / "data" / "nfl-big-data-bowl-regional-event-data-main" / "data"
 
@@ -107,19 +109,6 @@ COBERTURAS: dict[str, tuple[str, str]] = {
     "Prevent": ("Prevent", "defensa para evitar jugadas largas"),
     "Miscellaneous": ("Cobertura mixta", "esquema que no encaja en las categorías habituales"),
 }
-
-FORMACIONES: dict[str, str] = {
-    "SHOTGUN": "Shotgun (QB atrás del centro)",
-    "EMPTY": "Empty (sin corredores en el backfield)",
-    "SINGLEBACK": "Singleback (un corredor)",
-    "I_FORM": "Formación I",
-    "PISTOL": "Pistol",
-    "JUMBO": "Jumbo (formación pesada)",
-    "WILDCAT": "Wildcat",
-}
-
-TIPO_COBERTURA = {"Man": "cobertura de hombre", "Zone": "cobertura de zona", "Other": "cobertura mixta"}
-
 
 def nombre_cobertura(clave: str) -> str:
     return COBERTURAS.get(clave, (clave, ""))[0]
@@ -244,9 +233,10 @@ def resumen_partido(game_id: int) -> dict | None:
 
     # jugadas más largas
     largas = pj.sort_values("prePenaltyPlayResult", ascending=False).head(3)
-    destacadas = [{"playId": int(r.playId), "cuarto": int(r.quarter), "reloj": r.gameClock,
+    destacadas = [{"playId": int(r.playId), "cuarto": int(r.quarter), "reloj": _reloj(r.gameClock),
                    "yardas": int(r.prePenaltyPlayResult), "ofensiva": r.possessionTeam,
-                   "descripcion": r.playDescription} for r in largas.itertuples()]
+                   "descripcion": _narracion(r, _pff_idx.loc[(game_id, int(r.playId))].reset_index(drop=True))}
+                  for r in largas.itertuples()]
     return {
         "gameId": game_id, "semana": int(g.week), "fecha": g.gameDate, "local": g.homeTeamAbbr,
         "visitante": g.visitorTeamAbbr, "jugadas": int(len(pj)), "equipos": equipos,
@@ -269,29 +259,37 @@ def _lugar(r) -> str:
         return "en media cancha (yarda 50)"
     if lado == r.possessionTeam:
         return f"en su propia yarda {num}"
-    return f"en la yarda {num} de {lado}"
+    return f"en la yarda {num} {L.de_los(lado)}"
 
 
-def _texto_resultado(r) -> str:
-    y = int(r.prePenaltyPlayResult)
-    desc = str(r.playDescription)
-    if r.anulada:
-        base = "La jugada se anuló por penalización"
-    elif "TOUCHDOWN" in desc and r.passResult != "IN":
-        base = f"Touchdown, con un avance de {y} yardas" if r.passResult in ("C", "R") else "Touchdown"
-    elif r.passResult == "C":
-        base = f"Pase completo de {y} yardas" if y >= 0 else f"Pase completo con pérdida de {abs(y)}"
-    elif r.passResult == "I":
-        base = "Pase incompleto"
-    elif r.passResult == "S":
-        base = f"Sack con pérdida de {abs(y)} yardas"
-    elif r.passResult == "IN":
-        base = "Pase interceptado"
-    elif r.passResult == "R":
-        base = f"Scramble del quarterback con {y} yardas" if y >= 0 else f"Scramble con pérdida de {abs(y)}"
-    else:
-        base = "Resultado no clasificado"
-    return base
+_CUBOS = {"1-3": "1 a 3 yardas por ganar", "4-6": "4 a 6 yardas por ganar",
+          "7-10": "7 a 10 yardas por ganar", "11+": "11 o más yardas por ganar"}
+
+
+def _etiqueta_situacion(down: int, cubo: str) -> str:
+    if down <= 0 or cubo not in _CUBOS:
+        return "jugada especial"
+    return f"{L.INTENTOS[down]} intento, {_CUBOS[cubo]}"
+
+
+def _reloj(texto: str) -> str:
+    try:
+        m, s = str(texto).split(":")
+        return f"{int(m)}:{s}"
+    except ValueError:
+        return str(texto)
+
+
+def _nombres_de_jugada(pf: pd.DataFrame) -> L.Nombres:
+    return L.Nombres([NOMBRES.get(int(i), "") for i in pf.nflId.tolist() if int(i) in NOMBRES])
+
+
+def _narracion(r, pf: pd.DataFrame) -> str:
+    """Qué pasó en la jugada, explicado en español a partir del texto original en inglés."""
+    qb = pf[pf.pff_role == "Pass"]
+    qb_nombre = NOMBRES.get(int(qb.nflId.iloc[0]), "") if len(qb) else ""
+    texto = L.narrar(r.playDescription, r.passResult, int(r.prePenaltyPlayResult), _nombres_de_jugada(pf), qb_nombre)
+    return texto or L.respaldo(r.passResult, int(r.prePenaltyPlayResult), r.possessionTeam, qb_nombre)
 
 
 def detalle_jugada(game_id: int, play_id: int) -> dict | None:
@@ -309,17 +307,10 @@ def detalle_jugada(game_id: int, play_id: int) -> dict | None:
     qb_nombre = qb.nombre.iloc[0] if len(qb) else None
     rushers = pf[pf.pff_role == "Pass Rush"]
     sackers = rushers[rushers.pff_sack == 1].nombre.tolist()
-    hurriers = rushers[(rushers.pff_hurry == 1)].nombre.tolist()
-    hitters = rushers[(rushers.pff_hit == 1)].nombre.tolist()
-    bloqueadores = pf[pf.pff_role == "Pass Block"]
-    culpables = []
-    for b in bloqueadores.itertuples():
-        if b.pff_sackAllowed == 1:
-            culpables.append((b.nombre, "un sack"))
-        elif b.pff_hitAllowed == 1:
-            culpables.append((b.nombre, "un golpe al QB"))
-        elif b.pff_hurryAllowed == 1:
-            culpables.append((b.nombre, "una presión"))
+    presionaron = list(dict.fromkeys(
+        rushers[(rushers.pff_hurry == 1) | (rushers.pff_hit == 1)].nombre.tolist()))
+    culpables = list(dict.fromkeys(
+        pf[(pf.pff_role == "Pass Block") & ((pf.pff_sackAllowed == 1) | (pf.pff_hitAllowed == 1) | (pf.pff_hurryAllowed == 1))].nombre.tolist()))
 
     down, ytg = int(r.down), int(r.yardsToGo)
     cob_clave = r.pff_passCoverage
@@ -327,99 +318,117 @@ def detalle_jugada(game_id: int, play_id: int) -> dict | None:
     marc = _marcador(r, g)
     pts_of = marc["puntos_local"] if r.possessionTeam == g.homeTeamAbbr else marc["puntos_visitante"]
     pts_de = marc["puntos_visitante"] if r.possessionTeam == g.homeTeamAbbr else marc["puntos_local"]
-    dif = pts_of - pts_de
     ofensiva, defensa = r.possessionTeam, r.defensiveTeam
+    los_of, los_de = L.cap(L.los(ofensiva)), L.cap(L.los(defensa))
+    dos_puntos = str(r.playDescription).startswith("TWO-POINT")
+    narracion = _narracion(r, pf)
+    nom, explicacion = L.cobertura(cob_clave)
+    etiqueta = _etiqueta_situacion(down, r.cubo)
 
     puntos: list[dict] = []
 
-    # Situación
-    sit_down = f"{down}ª y {ytg}" if down > 0 and ytg > 0 else "Situación especial"
-    estado = ("empatan" if dif == 0 else
-              f"{ofensiva} gana por {dif}" if dif > 0 else f"{ofensiva} pierde por {abs(dif)}")
-    puntos.append({"tipo": "Situación", "texto":
-        f"{sit_down} {_lugar(r)}, {int(r.quarter)}º cuarto con {r.gameClock} en el reloj. "
-        f"Marcador previo: {ofensiva} {pts_of}, {defensa} {pts_de} ({estado})."})
-
-    # Ofensiva
-    form = FORMACIONES.get(str(r.offenseFormation), str(r.offenseFormation))
-    extra = ", con fingimiento de carrera (play action)" if r.pff_playAction == 1 else ""
-    puntos.append({"tipo": "Ofensiva", "texto":
-        f"{ofensiva} se alinea en {form} con {r.personnelO}{extra}."
-        + (f" El pasador es {qb_nombre}." if qb_nombre else "")})
-
-    # Defensa
-    nom, desc = COBERTURAS.get(cob_clave, (cob_clave, ""))
-    tipo = TIPO_COBERTURA.get(str(r.pff_passCoverageType), "")
-    caja = limpio(r.defendersInBox)
-    texto_def = f"{defensa} responde con {nom}"
-    if desc:
-        texto_def += f" ({desc})"
-    if tipo:
-        texto_def += f", {tipo}"
-    texto_def += f". Personal: {r.personnelD}"
-    if caja is not None:
-        texto_def += f", con {int(caja)} defensores en la caja"
-    puntos.append({"tipo": "Defensa", "texto": texto_def + "."})
-
-    # Presión
-    nr = int(r.rushers)
-    rush_txt = (f"Mandan {nr} rushers, es un blitz." if nr >= 5 else
-                f"Rush de {nr}, sin blitz." if nr in (3, 4) else f"Solo {nr} rushers." if nr else "")
-    if sackers:
-        pres = f"Sack de {' y '.join(sackers)}."
-    elif r.hay_presion:
-        quienes = hurriers + hitters
-        pres = ("El QB sufre presión" + (f" de {', '.join(dict.fromkeys(quienes))}." if quienes else "."))
+    # La situación
+    if dos_puntos:
+        intento = "Es un intento de conversión de dos puntos: si lo logran, suman 2 puntos extra."
+    elif down > 0 and ytg > 0:
+        intento = f"Es el {L.INTENTOS[down]} intento y faltan {L.yardas_texto(ytg)} para el primer down."
     else:
-        pres = "El QB tiene bolsa limpia, sin presiones registradas."
+        intento = "Es una jugada especial."
+    if pts_of == pts_de:
+        marcador = f"Van empatados {pts_of} a {pts_de}."
+    elif pts_of > pts_de:
+        marcador = f"El marcador va {pts_of} a {pts_de} a favor de {L.los(ofensiva)}."
+    else:
+        marcador = f"El marcador va {pts_de} a {pts_of} a favor de {L.los(defensa)}."
+    puntos.append({"tipo": "La situación", "texto":
+        f"{intento} El balón está {_lugar(r)}, en el {L.CUARTOS[int(r.quarter)]} (quedan {_reloj(r.gameClock)} en el reloj). {marcador}"})
+
+    # El ataque
+    pers = L.personal(r.personnelO, False)
+    ataque = []
+    if pers:
+        ataque.append(f"{los_of} {L.verbo(ofensiva, 'salen', 'sale')} con {pers}.")
+    form = L.cap(L.formacion(r.offenseFormation, qb_nombre or ""))
+    if r.pff_playAction == 1:
+        form += " y, antes de lanzar, finge una entrega para engañar a la defensa (play action)"
+    ataque.append(form + ".")
+    puntos.append({"tipo": "El ataque", "texto": " ".join(ataque)})
+
+    # La defensa
+    caja = limpio(r.defendersInBox)
+    defensa_txt = f"{los_de} {L.verbo(defensa, 'defienden', 'defiende')} con {nom}: {explicacion}."
+    pers_d = L.personal(r.personnelD, True)
+    if pers_d:
+        defensa_txt += f" En el campo tienen {pers_d}"
+        if caja is not None:
+            c = int(caja)
+            defensa_txt += f", y {L.num(c)} {'defensor está' if c == 1 else 'defensores están'} pegados a la línea de golpeo"
+        defensa_txt += "."
+    puntos.append({"tipo": "La defensa", "texto": defensa_txt})
+
+    # Presión al quarterback
+    nr = int(r.rushers)
+    suj_qb = qb_nombre or "El quarterback"
+    presion = []
+    if nr >= 5:
+        presion.append(f"{los_de} {L.verbo(defensa, 'mandaron', 'mandó')} a {L.num(nr)} defensores por el quarterback, más de los habituales (blitz).")
+    elif nr == 4:
+        presion.append(f"{los_de} {L.verbo(defensa, 'mandaron', 'mandó')} a cuatro defensores por el quarterback, lo normal.")
+    elif nr > 0:
+        presion.append(f"{los_de} {L.verbo(defensa, 'mandaron', 'mandó')} solo a {L.num(nr)} defensores por el quarterback, para tener más gente cuidando a los receptores.")
+    if sackers:
+        presion.append(f"{L.unir(sackers)} {'derribó' if len(sackers) == 1 else 'derribaron'} al quarterback antes de que lanzara.")
+    elif r.hay_presion:
+        presion.append(f"El quarterback fue presionado por {L.unir(presionaron)}." if presionaron else "El quarterback fue presionado.")
+    else:
+        presion.append(f"{suj_qb} tuvo tiempo de sobra: nadie lo presionó.")
     if culpables:
-        pres += " Falla en protección: " + "; ".join(f"{n} permitió {t}" for n, t in culpables) + "."
-    puntos.append({"tipo": "Presión", "texto": f"{rush_txt} {pres}".strip()})
+        presion.append(f"Fallaron al proteger al quarterback: {L.unir(culpables)}.")
+    puntos.append({"tipo": "Presión al QB", "texto": " ".join(presion)})
 
-    # Resultado
-    res = _texto_resultado(r)
-    conv = ""
-    if down in (3, 4) and ytg > 0 and not r.anulada:
+    # Qué pasó
+    que_paso = narracion
+    if down in (3, 4) and ytg > 0 and not r.anulada and not dos_puntos and r.passResult != "IN":
         ok = int(r.prePenaltyPlayResult) >= ytg and r.passResult in ("C", "R")
-        conv = " Convierte el primer down." if ok else " No convierte."
-    pen = ""
+        que_paso += " ¡Consiguen el primer down!" if ok else " No consiguen el primer down."
     if r.penalizacion:
-        pen = (f" Penalización: {r.foulName1}" +
-               (f" de {_equipo_nombre(r.foulNFLId1)}" if limpio(r.foulNFLId1) is not None else "") +
-               (f", {int(r.penaltyYards)} yardas." if limpio(r.penaltyYards) is not None else "."))
-    puntos.append({"tipo": "Resultado", "texto": f"{res}.{conv}{pen}"})
+        quien = f" de {_equipo_nombre(r.foulNFLId1)}" if limpio(r.foulNFLId1) is not None else ""
+        castigo = f", con castigo de {L.yardas_texto(int(r.penaltyYards))}" if limpio(r.penaltyYards) is not None else ""
+        que_paso += f" Penalización: {L.falta(r.foulName1)}{quien}{castigo}."
+    puntos.append({"tipo": "Qué pasó", "texto": que_paso})
 
-    # Contexto de liga
+    # Comparación con el resto de la liga
     s, c, gen = refs["situacion"], refs["cobertura"], refs["general"]
-    situacion_normal = down > 0 and r.cubo != "especial"
+    situacion_normal = down > 0 and r.cubo in _CUBOS and not dos_puntos
     if situacion_normal and s.get("n", 0) >= 10 and s.get("completos_pct") is not None:
-        puntos.append({"tipo": "Contexto", "texto":
-            f"En {down}ª y {r.cubo} yardas, la ofensiva completa {s['completos_pct']}% de sus pases, "
-            f"promedia {s['yardas_media']} yardas y convierte el primer down en {s['primer_down_pct']}% "
-            f"({s['n']} jugadas)."})
+        extra = f" y consiguen el primer down {round(s['primer_down_pct'])} de cada 100 veces" if s.get("primer_down_pct") is not None else ""
+        puntos.append({"tipo": "Comparación", "texto":
+            f"En jugadas parecidas ({etiqueta}), los equipos completan {round(s['completos_pct'])} de cada 100 pases{extra} (se revisaron {s['n']} jugadas)."})
     if c.get("n", 0) >= 10:
-        puntos.append({"tipo": "Contexto", "texto":
-            f"Contra {nom}, el QB recibe presión en {c['presion_pct']}% de los dropbacks "
-            f"(promedio general {gen['presion_pct']}%) y la ofensiva promedia {c['yardas_media']} yardas "
-            f"({c['n']} jugadas)."})
+        puntos.append({"tipo": "Comparación", "texto":
+            f"Cuando la defensa usa {nom}, el quarterback termina presionado en {round(c['presion_pct'])} de cada 100 jugadas "
+            f"(el promedio de la liga es {round(gen['presion_pct'])}) y el ataque gana {c['yardas_media']} yardas por jugada."})
     if situacion_normal and s.get("n", 0) >= 10 and not r.anulada and r.passResult != "IN":
         y = int(r.prePenaltyPlayResult)
-        cmp = "por encima" if y > s["yardas_media"] else "por debajo" if y < s["yardas_media"] else "igual"
-        puntos.append({"tipo": "Contexto", "texto":
-            f"Esta jugada deja {y} yardas, {cmp} del promedio de {s['yardas_media']} en la misma situación."})
+        if y == s["yardas_media"]:
+            comp = "lo mismo que"
+        else:
+            comp = "más que" if y > s["yardas_media"] else "menos que"
+        verbo = "ganó" if y >= 0 else "perdió"
+        puntos.append({"tipo": "Comparación", "texto":
+            f"Esta jugada {verbo} {L.yardas_texto(y)}, {comp} el promedio de {s['yardas_media']} yardas en una situación igual."})
 
     return {
-        "gameId": game_id, "playId": play_id, "cuarto": int(r.quarter), "reloj": r.gameClock,
+        "gameId": game_id, "playId": play_id, "cuarto": int(r.quarter), "reloj": _reloj(r.gameClock),
         "down": down, "distancia": ytg, "ofensiva": ofensiva, "defensa": defensa,
-        "lugar": _lugar(r), "marcador": marc, "descripcion": r.playDescription,
+        "lugar": _lugar(r), "marcador": marc, "narracion": narracion,
         "resultado": limpio(r.passResult), "yardas": int(r.prePenaltyPlayResult),
         "yardas_totales": int(r.playResult), "presion": bool(r.hay_presion),
-        "formacion": limpio(r.offenseFormation), "personal_of": limpio(r.personnelO),
-        "personal_def": limpio(r.personnelD), "caja": caja if caja is None else int(caja),
-        "cobertura": cob_clave, "cobertura_nombre": nom,
-        "cobertura_tipo": limpio(r.pff_passCoverageType), "play_action": bool(r.pff_playAction == 1),
-        "rushers": nr, "qb": qb_nombre, "puntos": puntos,
-        "referencias": refs, "etiqueta_situacion": f"{down}ª y {r.cubo}",
+        "cobertura": cob_clave, "cobertura_nombre": nom, "cobertura_explicacion": explicacion,
+        "play_action": bool(r.pff_playAction == 1), "rushers": nr, "qb": qb_nombre, "puntos": puntos,
+        "referencias": refs, "etiqueta_situacion": etiqueta,
+        "etiqueta_intento": "Jugada especial" if down <= 0 else f"{L.INTENTOS[down].capitalize()} intento",
+        "faltan": ytg if (down > 0 and ytg > 0) else None,
     }
 
 
@@ -461,7 +470,7 @@ def tracking_jugada(game_id: int, play_id: int) -> dict | None:
     for nid, row in info.items():
         jugadores[str(nid)] = {
             "nombre": NOMBRES.get(nid, f"jugador {nid}"), "posicion": row.pff_positionLinedUp,
-            "rol": row.pff_role,
+            "rol": L.ROLES_ES.get(row.pff_role, row.pff_role), "qb": row.pff_role == "Pass",
             "presion": bool(row.pff_hit == 1 or row.pff_hurry == 1 or row.pff_sack == 1),
         }
 

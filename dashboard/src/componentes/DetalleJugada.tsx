@@ -1,18 +1,34 @@
 import { useEffect, useState } from 'react'
 import { obtener } from '../api'
+import { apodoEquipo } from '../equipos'
 import type { DetalleJugada as Detalle, Tracking } from '../tipos'
+import BannerEquipos from './BannerEquipos'
 import Campo from './Campo'
-import Equipo from './Equipo'
-import { nombreEquipo } from '../equipos'
 import Referencias from './Referencias'
+import Titulo from './Titulo'
 
+// Cada etiqueta de las frases para el micrófono tiene su propio color.
 const COLORES: Record<string, string> = {
-  Situación: 'bg-sky-900 text-sky-200',
-  Ofensiva: 'bg-blue-900 text-blue-200',
-  Defensa: 'bg-red-900 text-red-200',
-  Presión: 'bg-amber-900 text-amber-200',
-  Resultado: 'bg-emerald-900 text-emerald-200',
-  Contexto: 'bg-slate-700 text-slate-200',
+  'La situación': 'bg-blue-100 text-blue-800',
+  'El ataque': 'bg-nfl-azul text-white',
+  'La defensa': 'bg-nfl-rojo text-white',
+  'Presión al QB': 'bg-red-100 text-red-700',
+  'Qué pasó': 'bg-slate-800 text-white',
+  'Comparación': 'bg-slate-200 text-slate-700',
+}
+
+function Tarjeta({ titulo, ayuda, accion, children }: {
+  titulo: string; ayuda: string; accion?: React.ReactNode; children: React.ReactNode
+}) {
+  return (
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 motion-safe:animate-subir">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <Titulo ayuda={ayuda}>{titulo}</Titulo>
+        {accion}
+      </div>
+      {children}
+    </section>
+  )
 }
 
 export default function DetalleJugada({ gameId, playId }: { gameId: number; playId: number }) {
@@ -34,10 +50,10 @@ export default function DetalleJugada({ gameId, playId }: { gameId: number; play
     return () => { vigente = false }
   }, [gameId, playId])
 
-  if (error) return <p className="rounded bg-red-950 p-3 text-red-200">No se pudo cargar la jugada. {error}</p>
-  if (!d) return <p className="text-slate-400">Cargando jugada…</p>
+  if (error) return <p className="rounded bg-red-50 p-3 text-red-700">No se pudo cargar la jugada. {error}</p>
+  if (!d) return <p className="text-slate-500">Cargando jugada…</p>
 
-  const marcador = d.marcador
+  const m = d.marcador
   async function copiar() {
     if (!d) return
     const texto = d.puntos.map((p) => `${p.tipo}: ${p.texto}`).join('\n')
@@ -52,52 +68,65 @@ export default function DetalleJugada({ gameId, playId }: { gameId: number; play
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg bg-slate-800 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Equipo abbr={d.ofensiva} tam={32} /> <span className="text-sm font-normal text-slate-400">ataca contra</span> <Equipo abbr={d.defensa} tam={32} />
-          </h2>
-          <p className="text-sm text-slate-300">
-            {d.cuarto}º cuarto · {d.reloj} · {marcador.visitante} {marcador.puntos_visitante} - {marcador.local} {marcador.puntos_local}
+      <BannerEquipos
+        izq={{ abbr: d.ofensiva, etiqueta: 'Ataca' }}
+        der={{ abbr: d.defensa, etiqueta: 'Defiende' }}
+        centro={
+          <div className="px-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-blue-100">{d.etiqueta_intento}</p>
+            {d.faltan !== null && (
+              <p className="text-lg font-extrabold leading-tight sm:text-2xl">
+                faltan {d.faltan} {d.faltan === 1 ? 'yarda' : 'yardas'}
+              </p>
+            )}
+            <p className="my-1 text-3xl font-black motion-safe:animate-flecha" aria-hidden="true">➜</p>
+            <p className="text-xs text-blue-100">{d.cuarto === 5 ? 'Tiempo extra' : `Cuarto ${d.cuarto}`} · quedan {d.reloj}</p>
+            <p className="mt-1 text-xs text-blue-100">
+              Marcador: {apodoEquipo(m.visitante)} {m.puntos_visitante} - {apodoEquipo(m.local)} {m.puntos_local}
+            </p>
+          </div>
+        }
+        pie={
+          <p>
+            <span className="mr-2 rounded bg-white px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider text-nfl-azul">Lo que pasó</span>
+            {d.narracion}
           </p>
-        </div>
-        <p className="mt-1 text-xs text-slate-400">{nombreEquipo(d.ofensiva)} (ofensiva) contra {nombreEquipo(d.defensa)} (defensa)</p>
-        <p className="mt-2 text-sm text-slate-300">{d.descripcion}</p>
-      </section>
+        }
+      />
 
-      <section className="rounded-lg bg-slate-800 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-semibold">Datos para el micrófono</h3>
+      <Tarjeta titulo="Para decir al aire"
+        ayuda="Frases listas para comentar esta jugada, armadas con los datos del partido."
+        accion={
           <button type="button" onClick={copiar}
-            className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700">
+            className="shrink-0 rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">
             {copiado ? 'Copiado' : 'Copiar todo'}
           </button>
-        </div>
-        <ul className="space-y-2">
+        }>
+        <ul className="space-y-3">
           {d.puntos.map((p, k) => (
-            <li key={k} className="flex gap-2 text-sm">
-              <span className={`h-fit shrink-0 rounded px-2 py-0.5 text-xs font-semibold ${COLORES[p.tipo] ?? 'bg-slate-700'}`}>
+            <li key={k} className="flex gap-3 text-[15px] leading-relaxed">
+              <span className={`mt-0.5 h-fit w-28 shrink-0 rounded px-2 py-0.5 text-center text-xs font-bold ${COLORES[p.tipo] ?? 'bg-slate-200'}`}>
                 {p.tipo}
               </span>
               <span>{p.texto}</span>
             </li>
           ))}
         </ul>
-      </section>
+      </Tarjeta>
 
-      <section className="rounded-lg bg-slate-800 p-4">
-        <h3 className="mb-2 font-semibold">Repetición en cancha</h3>
+      <Tarjeta titulo="Así se vio en la cancha"
+        ayuda="Mira cómo se movieron los 22 jugadores y el balón. Pulsa Reproducir, arrastra la barra o salta a un momento de la jugada.">
         {t ? <Campo t={t} /> : errorT ? (
-          <p className="text-sm text-slate-400">No hay datos de seguimiento para esta jugada.</p>
+          <p className="text-sm text-slate-500">No hay datos de movimiento para esta jugada.</p>
         ) : (
-          <p className="text-sm text-slate-400">Cargando seguimiento…</p>
+          <p className="text-sm text-slate-500">Cargando la repetición…</p>
         )}
-      </section>
+      </Tarjeta>
 
-      <section className="rounded-lg bg-slate-800 p-4">
-        <h3 className="mb-2 font-semibold">Esta situación frente al resto de la liga</h3>
+      <Tarjeta titulo="¿Qué tan normal fue?"
+        ayuda="Compara esta jugada con las demás jugadas de pase de las semanas 1 a 8.">
         <Referencias d={d} />
-      </section>
+      </Tarjeta>
     </div>
   )
 }

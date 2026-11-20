@@ -38,13 +38,16 @@ export type PuntoHablar = { tipo: string; texto: string }
 
 export type DetalleJugada = {
   gameId: number; playId: number; cuarto: number; reloj: string; down: number; distancia: number
-  ofensiva: string; defensa: string; lugar: string; descripcion: string
+  ofensiva: string; defensa: string; lugar: string
+  narracion: string // qué pasó, explicado en español
   resultado: string | null; yardas: number; presion: boolean
-  cobertura: string; cobertura_nombre: string; cobertura_tipo: string | null
+  cobertura: string; cobertura_nombre: string; cobertura_explicacion: string
   puntos: PuntoHablar[]
   marcador: { local: string; visitante: string; puntos_local: number; puntos_visitante: number }
   referencias: { general: Metricas; situacion: Metricas; cobertura: Metricas; combinada: Metricas }
   etiqueta_situacion: string
+  etiqueta_intento: string // "Tercer intento" o "Jugada especial"
+  faltan: number | null // yardas que faltan para el primer down
 }
 
 export type JugadorTracking = { id: number | null; e: 'O' | 'D' | 'B'; j: number | null; x: number; y: number }
@@ -52,6 +55,6 @@ export type Cuadro = { f: number; ev: string | null; j: JugadorTracking[] }
 export type Tracking = {
   gameId: number; playId: number; los: number; primer_down: number | null
   ofensiva: string; defensa: string
-  jugadores: Record<string, { nombre: string; posicion: string; rol: string; presion: boolean }>
+  jugadores: Record<string, { nombre: string; posicion: string; rol: string; qb: boolean; presion: boolean }>
   cuadros: Cuadro[]
 }

@@ -20,3 +20,23 @@ export function apodoEquipo(abbr: string): string {
   const palabras = nombreEquipo(abbr).split(' ')
   return palabras[palabras.length - 1]
 }
+
+// "Tampa Bay Buccaneers" -> { ciudad: "Tampa Bay", apodo: "Buccaneers" }.
+export function ciudadYApodo(abbr: string): { ciudad: string; apodo: string } {
+  if (abbr === 'WAS') return { ciudad: 'Washington', apodo: 'Football Team' }
+  const palabras = nombreEquipo(abbr).split(' ')
+  return { ciudad: palabras.slice(0, -1).join(' '), apodo: palabras[palabras.length - 1] }
+}
+
+// Posiciones de los jugadores, explicadas en español.
+const POSICIONES: Record<string, string> = {
+  QB: 'quarterback', RB: 'corredor', FB: 'fullback', WR: 'receptor', TE: 'ala cerrada',
+  T: 'liniero ofensivo', G: 'liniero ofensivo', C: 'centro',
+  DE: 'ala defensiva', DT: 'tackle defensivo', NT: 'tackle defensivo',
+  OLB: 'apoyador', ILB: 'apoyador', MLB: 'apoyador', LB: 'apoyador',
+  CB: 'esquinero', FS: 'safety', SS: 'safety', DB: 'defensa de secundaria',
+}
+
+export function posicionEs(codigo: string): string {
+  return POSICIONES[codigo] ?? codigo
+}
