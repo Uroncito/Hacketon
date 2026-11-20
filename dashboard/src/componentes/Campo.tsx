@@ -121,7 +121,7 @@ export default function Campo({ t }: { t: Tracking }) {
 
       <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
         <button type="button" onClick={alternar}
-          className="rounded bg-emerald-600 px-3 py-1 font-semibold text-white hover:bg-emerald-500">
+          className="rounded bg-nfl-rojo px-3 py-1 font-semibold text-white hover:bg-nfl-rojo">
           {jugando ? 'Pausa' : 'Reproducir'}
         </button>
         <input type="range" min={0} max={n - 1} value={i} aria-label="Cuadro de la jugada"

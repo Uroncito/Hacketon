@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
-import { obtener } from '../api'
+import { useMemo, useState, type ReactNode } from 'react'
 import { CALENDARIO_2021, type Juego } from '../calendario'
 import { EQUIPOS, apodoEquipo, nombreEquipo } from '../equipos'
 import type { Partido } from '../tipos'
 import Equipo, { LogoCirculo } from './Equipo'
-import Portada from './Portada'
 import VistaPartido from './VistaPartido'
 
 const TZ_ET = 'America/New_York' // hora del Este de EE. UU., la que trae la base de datos
@@ -60,11 +58,11 @@ function TarjetaJuego({ j, alAbrir }: { j: Juego; alAbrir: () => void }) {
     <li>
       <button type="button" onClick={alAbrir}
         aria-label={`${nombreEquipo(j.visitante)} contra ${nombreEquipo(j.local)}, ${horaET(j)} ET. Ver jugadas`}
-        className="grid w-full items-center gap-1 rounded-lg bg-slate-800 px-2 py-1 text-left ring-1 ring-slate-700 hover:bg-slate-700 hover:ring-emerald-500"
+        className="grid w-full items-center gap-1 rounded-lg bg-slate-800 px-2 py-1 text-left ring-1 ring-slate-700 hover:bg-slate-700 hover:ring-red-400"
         style={{ gridTemplateColumns: '3.1rem minmax(0,1fr) auto minmax(0,1fr)' }}>
         <span className="flex flex-col whitespace-nowrap text-[10px] font-semibold leading-tight tabular-nums">
           <span className="text-sky-300" title="Hora del Este de EE. UU.">{horaET(j)} ET</span>
-          <span className="text-emerald-400" title="Hora de Ciudad de México">{horaMX(j)} MX</span>
+          <span className="text-amber-300" title="Hora de Ciudad de México">{horaMX(j)} MX</span>
         </span>
         <EquipoEnTarjeta abbr={j.visitante} />
         <span className="h-4 w-px shrink-0 bg-slate-600" aria-hidden="true" />
@@ -142,7 +140,7 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
             <li key={s.semana}>
               <button type="button" disabled={!j} onClick={() => j && alAbrir(j, s.semana)}
                 className="flex w-full items-center gap-3 rounded-lg bg-slate-900 px-3 py-1 text-left enabled:hover:bg-slate-800 disabled:cursor-default">
-                <span className="w-14 shrink-0 text-sm font-semibold text-emerald-400">Sem {s.semana}</span>
+                <span className="w-14 shrink-0 text-sm font-semibold text-amber-300">Sem {s.semana}</span>
                 {j && rival ? (
                   <>
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
@@ -150,7 +148,7 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
                     </span>
                     <span className="truncate text-sm font-semibold">{apodoEquipo(rival)}</span>
                     <span className="ml-auto shrink-0 text-xs text-slate-400">
-                      {mayus(fDia.format(new Date(j.fecha)))} · <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-emerald-400">{horaMX(j)} MX</span>
+                      {mayus(fDia.format(new Date(j.fecha)))} · <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-amber-300">{horaMX(j)} MX</span>
                     </span>
                   </>
                 ) : (
@@ -165,10 +163,10 @@ function TemporadaEquipo({ abbr, alSalir, alAbrir }: {
   )
 }
 
-type Abierto = { juego: Juego; semana: number }
+export type Abierto = { juego: Juego; semana: number }
 
 // Partido abierto: botón para volver, cuándo se jugó y la misma vista de la cabina (jugadas, resumen y detalle).
-function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido | null; alVolver: () => void }) {
+export function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido | null; alVolver: () => void }) {
   const j = a.juego
   return (
     <section>
@@ -179,7 +177,7 @@ function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido
         </button>
         <p className="text-sm text-slate-300">
           Semana {a.semana} · {mayus(fSemana.format(new Date(j.fecha)))} {fFecha.format(new Date(j.fecha))} ·{' '}
-          <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-emerald-400">{horaMX(j)} MX</span>
+          <span className="text-sky-300">{horaET(j)} ET</span> · <span className="text-amber-300">{horaMX(j)} MX</span>
         </p>
       </div>
       {partido ? <VistaPartido key={partido.gameId} partido={partido} /> : (
@@ -199,36 +197,21 @@ function PartidoAbierto({ a, partido, alVolver }: { a: Abierto; partido: Partido
   )
 }
 
-export default function Calendario() {
+// `arriba` es el contenido que se muestra encima del calendario (el resumen de la temporada).
+export default function Calendario({ arriba, alAbrir }: { arriba?: ReactNode; alAbrir: (a: Abierto) => void }) {
   const [semana, setSemana] = useState(1)
   const [equipo, setEquipo] = useState('')
-  const [abierto, setAbierto] = useState<Abierto | null>(null)
-  const [partidos, setPartidos] = useState<Partido[]>([])
   const s = CALENDARIO_2021[semana - 1]
   const equipos = useMemo(
     () => Object.keys(EQUIPOS).sort((a, b) => nombreEquipo(a).localeCompare(nombreEquipo(b))),
     [],
   )
-
-  // Partidos con jugadas en la base de datos (semanas 1 a 8), para enlazarlos con el calendario.
-  useEffect(() => {
-    obtener<Partido[]>('api/games').then(setPartidos).catch(() => setPartidos([]))
-  }, [])
-  const porClave = useMemo(
-    () => new Map(partidos.map((p) => [`${p.semana}|${p.visitante}|${p.local}`, p])),
-    [partidos],
-  )
-
-  const abrir = (juego: Juego, sem: number) => setAbierto({ juego, semana: sem })
+  const abrir = (juego: Juego, sem: number) => alAbrir({ juego, semana: sem })
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4">
-      {abierto ? (
-        <PartidoAbierto a={abierto} alVolver={() => setAbierto(null)}
-          partido={porClave.get(`${abierto.semana}|${abierto.juego.visitante}|${abierto.juego.local}`) ?? null} />
-      ) : (
-        <>
-          <Portada partidos={partidos} />
+      {arriba}
+      <>
           <div className="flex flex-wrap items-end justify-between gap-3 pt-4">
             <div>
               <h2 className="text-2xl font-bold">Calendario NFL 2021</h2>
@@ -251,13 +234,13 @@ export default function Calendario() {
               <nav aria-label="Semanas" className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(3rem, 1fr))' }}>
                 {CALENDARIO_2021.map((x) => (
                   <button key={x.semana} type="button" aria-pressed={x.semana === semana} onClick={() => setSemana(x.semana)}
-                    className={`rounded-lg py-2 text-sm font-semibold ${x.semana === semana ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+                    className={`rounded-lg py-2 text-sm font-semibold ${x.semana === semana ? 'bg-nfl-rojo text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
                     {x.semana}
                   </button>
                 ))}
               </nav>
 
-              <div className="flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-900 to-slate-800 px-4 py-3">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-nfl-azul to-slate-800 px-4 py-3">
                 <button type="button" disabled={semana === 1} onClick={() => setSemana(semana - 1)} aria-label="Semana anterior"
                   className="rounded px-3 py-1 text-lg hover:bg-slate-700 disabled:opacity-30">←</button>
                 <div className="text-center">
@@ -274,11 +257,10 @@ export default function Calendario() {
 
           <p className="text-xs text-slate-500">
             <span className="text-sky-300">ET</span>: hora del Este de EE. UU. (la que trae la base de datos).{' '}
-            <span className="text-emerald-400">MX</span>: hora de Ciudad de México. En cada partido, el visitante va a la izquierda y el local a la derecha.
+            <span className="text-amber-300">MX</span>: hora de Ciudad de México. En cada partido, el visitante va a la izquierda y el local a la derecha.
             Las horas de las semanas 9 a 18 vienen del calendario oficial, porque la base solo cubre las semanas 1 a 8.
           </p>
-        </>
-      )}
+      </>
     </div>
   )
 }

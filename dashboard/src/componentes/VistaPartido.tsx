@@ -63,7 +63,7 @@ export default function VistaPartido({ partido }: { partido: Partido }) {
         <div className="mb-2 flex flex-wrap gap-1">
           {FILTROS.map((f) => (
             <button key={f.id} type="button" onClick={() => setFiltro(f.id)}
-              className={`rounded-full px-2 py-0.5 text-xs ${f.id === filtro ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+              className={`rounded-full px-2 py-0.5 text-xs ${f.id === filtro ? 'bg-nfl-rojo text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
               {f.etiqueta} ({jugadas.filter(f.cumple).length})
             </button>
           ))}

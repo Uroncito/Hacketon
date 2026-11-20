@@ -55,3 +55,51 @@ export type Tracking = {
   jugadores: Record<string, { nombre: string; posicion: string; rol: string; presion: boolean }>
   cuadros: Cuadro[]
 }
+export type ResumenTemporada = {
+  temporada: number; partidos_jugados: number; semanas: number; jugadas_pase: number
+  partidos_con_jugadas: number; partidos_con_tracking: number; equipos: number; jugadores: number
+  yardas_media: number; completos_pct: number; sacks: number; intercepciones: number; touchdowns_pase: number
+  mejor_equipo: { equipo: string; indice: number; ranking: { equipo: string; indice: number }[] }
+  mejor_pase: {
+    yardas: number; equipo: string; qb: string | null; semana: number; rival: string
+    cuarto: number; reloj: string; gameId: number; playId: number; descripcion: string
+  }
+  mejor_jugador: {
+    qb: { nombre: string; equipo: string; dropbacks: number; yardas_por_dropback: number; completos: number; intentos: number }
+    presionador: { nombre: string; equipo: string; posicion: string; total: number; sacks: number; hurries: number; hits: number }
+    bloqueador: { nombre: string; equipo: string; posicion: string; snaps: number; permitidas: number }
+  }
+}
+export type JugadorEquipo = {
+  id: number; nombre: string; numero: number | null; posicion: string; grupo: string; edad: number | null
+  universidad: string | null; altura: string; altura_cm: number | null; peso_lb: number; peso_kg: number
+  jugadas: number; presiones: number; sacks: number; permitidas: number
+}
+export type PosicionCancha = { pos: string; grupo: string; n: number; dx: number; y: number; puntos: [number, number][] }
+export type PartidoEquipo = {
+  gameId: number; semana: number; fecha: string; local: boolean; rival: string
+  ofensiva: { n: number; yardas_media: number | null; sacks: number; completos_pct: number | null }
+  defensa: { n: number; yardas_media: number | null; sacks: number; intercepciones: number }
+}
+export type UsoItem = { nombre: string; pct: number }
+export type QbEquipo = {
+  nombre: string; dropbacks: number; intentos: number; completos: number; yardas: number
+  sacks: number; intercepciones: number; completos_pct: number | null
+}
+export type Presionador = { nombre: string; posicion: string; sacks: number; hurries: number; hits: number; total: number }
+export type PerfilEquipo = {
+  equipo: string; partidos: PartidoEquipo[]; jugadores: JugadorEquipo[]
+  posiciones: { ofensiva: PosicionCancha[]; defensa: PosicionCancha[] }
+  ofensiva: Metricas; defensa: Metricas; indice: number | null; puesto: number | null
+  resumen: string[]; qb: QbEquipo | null; presionadores: Presionador[]
+  formaciones: UsoItem[]; coberturas: UsoItem[]; penalizaciones_pct: number | null
+  promedio_liga: Record<string, number>
+}
+export type Comparacion = {
+  a: string; b: string
+  criterios: { criterio: string; a: number | null; b: number | null; ganador: string | null; mejor: string }[]
+  indice: Record<string, number>; puesto: Record<string, number>; victorias: Record<string, number>
+  mejor: string | null; veredicto: string; nota: string
+  fisico: Record<string, { jugadores: number; edad: number | null; altura_cm: number | null; peso_kg: number | null }>
+  perfiles: Record<string, Pick<PerfilEquipo, 'qb' | 'presionadores' | 'formaciones' | 'coberturas' | 'penalizaciones_pct' | 'ofensiva' | 'defensa'>>
+}
