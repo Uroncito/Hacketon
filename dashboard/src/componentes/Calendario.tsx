@@ -4,6 +4,7 @@ import { CALENDARIO_2021, type Juego } from '../calendario'
 import { EQUIPOS, apodoEquipo, nombreEquipo } from '../equipos'
 import type { Partido } from '../tipos'
 import Equipo, { LogoCirculo } from './Equipo'
+import Portada from './Portada'
 import VistaPartido from './VistaPartido'
 
 const TZ_ET = 'America/New_York' // hora del Este de EE. UU., la que trae la base de datos
@@ -227,7 +228,8 @@ export default function Calendario() {
           partido={porClave.get(`${abierto.semana}|${abierto.juego.visitante}|${abierto.juego.local}`) ?? null} />
       ) : (
         <>
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <Portada partidos={partidos} />
+          <div className="flex flex-wrap items-end justify-between gap-3 pt-4">
             <div>
               <h2 className="text-2xl font-bold">Calendario NFL 2021</h2>
               <p className="text-sm text-slate-400">Temporada regular, 18 semanas y 272 partidos. Toca un partido para ver sus jugadas.</p>

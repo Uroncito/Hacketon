@@ -21,16 +21,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-900 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-wider sm:text-5xl">NFL BIG DATA</h1>
-            <p className="text-sm text-slate-400">
-              {vista === 'calendario'
-                ? 'Calendario de la temporada 2021, organizado por semana.'
-                : 'Jugadas de pase de la NFL, semanas 1 a 8 de 2021. Elige un partido y una jugada para ver datos listos para comentar.'}
-            </p>
-          </div>
+      <header className="border-b border-slate-800 bg-slate-900/80 px-4 py-2">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-extrabold tracking-[0.25em] text-slate-200">NFL BIG DATA</p>
           <nav aria-label="Secciones" className="flex gap-1">
             {([['calendario', 'Calendario 2021'], ['cabina', 'Cabina (jugadas 2021)']] as const).map(([id, texto]) => (
               <button key={id} type="button" aria-pressed={vista === id} onClick={() => setVista(id)}
@@ -45,7 +38,13 @@ export default function App() {
       {vista === 'calendario' ? <Calendario /> : (
         <>
           {error && <p className="m-4 rounded bg-red-950 p-3 text-red-200">No se pudieron cargar los datos. {error}</p>}
-          <main className="grid gap-4 p-4 xl:grid-cols-[250px_minmax(0,1fr)]">
+          <div className="mx-auto max-w-7xl px-4 pt-4">
+            <h1 className="text-2xl font-bold">Cabina del comentarista</h1>
+            <p className="text-sm text-slate-400">
+              Jugadas de pase de las semanas 1 a 8 de 2021. Elige un partido y una jugada para ver datos listos para comentar.
+            </p>
+          </div>
+          <main className="mx-auto grid max-w-7xl gap-4 p-4 xl:grid-cols-[250px_minmax(0,1fr)]">
             <section aria-label="Partidos">
               <h2 className="mb-2 font-semibold">Partidos</h2>
               <div className="mb-2 flex flex-wrap gap-1">
